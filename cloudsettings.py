@@ -10,6 +10,11 @@ import Rhino
 couchdb_url = "https://stevebaer.cloudant.com/rhinotest"
 
 def cloudrestore(id):
+    """Retrieve settings document from a couchdb database and
+    update the current application settings by these values
+    Parameters:
+        id: name of the document store in the database
+    """
     url = couchdb_url + "/" + id
     f = urllib.urlopen(url)
     data = json.load(f)
@@ -26,15 +31,18 @@ def cloudrestore(id):
     subdict = data["AppearanceSettings"]
     for k, v in subdict.items():
         restorecolor(k,v)
+    rs.Redraw()
 
 	
-def cloudsave(id):
-    def addcolor(dict, name):
-        s = "Rhino.ApplicationSettings.AppearanceSettings." + name
-        color = eval(s)
-        dict[name] = System.Drawing.ColorTranslator.ToHtml(color)
-    
+def cloudsave(id, password=None):
+    """Save application settings to a document stored in a couchdb
+    database.
+    parameters:
+        id: Name of document to save in database. A the id is always
+            converted to lower case.
+    """
     #see if this document already exists in the couchdb
+    id = id.lower()
     url = couchdb_url + "/" + id
     f = urllib.urlopen(url)
     data = json.load(f)
@@ -52,6 +60,11 @@ def cloudsave(id):
         subdict = data["AppearanceSettings"]
     else:
         data["AppearanceSettings"] = subdict
+
+    def addcolor(dict, name):
+        s = "Rhino.ApplicationSettings.AppearanceSettings." + name
+        color = eval(s)
+        dict[name] = System.Drawing.ColorTranslator.ToHtml(color)
     addcolor(subdict, "CommandPromptBackgroundColor")
     addcolor(subdict, "CommandPromptHypertextColor")
     addcolor(subdict, "CommandPromptTextColor")
