@@ -5,13 +5,19 @@
     <script type="text/javascript">
       // Get list of ViewportBackgroundColor items from rhinotest database
 
-      var url = "https://stevebaer.cloudant.com/rhinotest/_design/test/_view/ViewportBackgroundColor?group=true&callback=?";
-      var settings_data;
+      var vpbackground_data;
+      var commandprompt_data;
       $(document).ready( function()
       {
+        var url = "https://stevebaer.cloudant.com/rhinotest/_design/test/_view/ViewportBackgroundColor?group=true&callback=?";
         $.getJSON(url,
           function(data){
-            settings_data = data;
+            vpbackground_data = data;
+          });
+        url = "https://stevebaer.cloudant.com/rhinotest/_design/test/_view/CommandPromptBackgroundColor?group=true&callback=?";
+        $.getJSON(url,
+          function (data) {
+            commandprompt_data = data;
           });
       });
     </script>                                                               
@@ -35,17 +41,32 @@
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'ViewportBackgroundColor');
       data.addColumn('number', 'Count');
-      for (var i = 0; i < settings_data.rows.length; i++) {
-        data.addRow([settings_data.rows[i].key, settings_data.rows[i].value]);
+      for (var i = 0; i < vpbackground_data.rows.length; i++) {
+        data.addRow([vpbackground_data.rows[i].key, vpbackground_data.rows[i].value]);
       }
 
       // Instantiate and draw our chart, passing in some options.
-      var chart = new google.visualization.PieChart(document.getElementById('chart_div'));
+      var chart = new google.visualization.PieChart(document.getElementById('viewport_background_chart_div'));
       var _c = new Array();
-      for (var i = 0; i < settings_data.rows.length; i++) {
-        _c[i] = settings_data.rows[i].key;
+      for (var i = 0; i < vpbackground_data.rows.length; i++) {
+        _c[i] = vpbackground_data.rows[i].key;
       }
-      chart.draw(data, {width: 600, height: 400, colors : _c});
+      chart.draw(data, { width: 600, height: 400, colors: _c });
+
+
+      data = new google.visualization.DataTable();
+      data.addColumn('string', 'CommandPromptBackgroundColor');
+      data.addColumn('number', 'Count');
+      for (var i = 0; i < commandprompt_data.rows.length; i++) {
+        data.addRow([commandprompt_data.rows[i].key, commandprompt_data.rows[i].value]);
+      }
+      chart = new google.visualization.PieChart(document.getElementById('command_prompt_background_chart_div'));
+      _c = new Array();
+      for (var i = 0; i < commandprompt_data.rows.length; i++) {
+        _c[i] = commandprompt_data.rows[i].key;
+      }
+      chart.draw(data, { width: 600, height: 400, colors: _c });
+
     }
     </script>
   </head>
@@ -53,6 +74,8 @@
   <body>
     <!--Div that will hold the pie chart-->
     <h1>Viewport Background Color Settings</h1>
-    <div id="chart_div"></div>
+    <div id="viewport_background_chart_div"></div>
+    <h1>Command Prompt Background Color Settings</h1>
+    <div id="command_prompt_background_chart_div"></div>
   </body>
 </html>
