@@ -51,7 +51,7 @@
       for (var i = 0; i < vpbackground_data.rows.length; i++) {
         _c[i] = vpbackground_data.rows[i].key;
       }
-      chart.draw(data, { width: 600, height: 400, colors: _c });
+      chart.draw(data, { width: 600, height: 400, is3D: true, title: "Viewport background color", colors: _c });
 
 
       data = new google.visualization.DataTable();
@@ -65,7 +65,7 @@
       for (var i = 0; i < commandprompt_data.rows.length; i++) {
         _c[i] = commandprompt_data.rows[i].key;
       }
-      chart.draw(data, { width: 600, height: 400, colors: _c });
+      chart.draw(data, { width: 600, height: 400, is3D: true, title: "Command prompt background color", colors: _c });
 
     }
     </script>
@@ -73,9 +73,9 @@
 
   <body>
     <!--Div that will hold the pie chart-->
-    <h1>Viewport Background Color Settings</h1>
+    <h1>Appearance Settings Summary</h1>
     <div id="viewport_background_chart_div"></div>
-    <h1>Command Prompt Background Color Settings</h1>
+    <hr />
     <div id="command_prompt_background_chart_div"></div>
   </body>
 </html>
