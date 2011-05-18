@@ -2,7 +2,7 @@
 Stores/retrieves appearance setting colors in a couchdb database
 hosted in a test account I set up on cloudant.com
 """
-import sys, json, urllib, urllib2
+import sys, json, urllib, urllib2, hashlib
 import rhinoscriptsyntax as rs
 import System
 import Rhino
@@ -40,6 +40,9 @@ def cloudsave(id, password=None):
     parameters:
         id: Name of document to save in database. A the id is always
             converted to lower case.
+        password: password used to save/update settings. password is
+            optional, but if you don't set one then anyone can overwrite
+            these settings
     """
     #see if this document already exists in the couchdb
     id = id.lower()
@@ -47,14 +50,24 @@ def cloudsave(id, password=None):
     f = urllib.urlopen(url)
     data = json.load(f)
     f.close()
+    hashed_password = None
+    if password:
+        hashed_password = hashlib.md5(password).hexdigest()
     if data.has_key("error"):
         if data["error"]=="not_found":
             data = {}
         else:
             #something unexpected happened
             return data
+    elif data.has_key("password_hash") and hashed_password:
+        #make sure the password matches
+        if data["password_hash"]!=hashed_password:
+            print "password does not match"
+            return
 
     data["_id"] = id
+    if hashed_password:
+        data["password_hash"] = hashed_password
     subdict = {}
     if data.has_key("AppearanceSettings"):
         subdict = data["AppearanceSettings"]
@@ -89,11 +102,18 @@ def cloudsave(id, password=None):
     
 
 def getinput():
-    restore = rs.GetBoolean("Get or set", [("Direction", "SaveSettingsToCloud", "GetSettingsFromCloud")], True)
-    if restore is None: return
-    restore = restore[0]
-    name = rs.GetString("Name for settings set")
-    if not name: return
+    gs = Rhino.Input.Custom.GetString()
+    gs.SetCommandPrompt("Name for settings")
+    direction = Rhino.Input.Custom.OptionToggle(True, "SaveSettingsToCloud", "GetSettingsFromCloud")
+    gs.AddOptionToggle("direction", direction)
+    while( True ):
+        if gs.Get()==Rhino.Input.GetResult.Option:
+            continue
+        break
+    if gs.CommandResult()!=Rhino.Commands.Result.Success:
+        return
+    restore = direction.CurrentValue
+    name = gs.StringResult()
     return restore, name
 
 if __name__ == "__main__":
@@ -104,7 +124,10 @@ if __name__ == "__main__":
         if restore:
             print "- Restoring settings saved in cloud"
             cloudrestore(name)
+            print "- Settings restored"
         else:
-            print "- Saving settings to cloud"
-            cloudsave(name)
-        print "- Done"
+            password = rs.GetString("password")
+            if password:
+                print "- Saving settings to cloud"
+                cloudsave(name, password)
+                print "- Settings have been saved under", name
