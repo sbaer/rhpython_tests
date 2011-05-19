@@ -17,11 +17,15 @@ def cloudrestore(id):
     f = urllib.urlopen(couchdb_url + "/" + id)
     data = json.load(f)
     f.close()
-    if data.has_key("error") or not data.has_key("AppearanceSettings"):
-        return data
-    def restoresetting(name, setting):
+    if data.has_key("error"): return data
+    
+    state = Rhino.ApplicationSettings.AppearanceSettings.GetDefaultState()
+    Rhino.ApplicationSettings.AppearanceSettings.UpdateFromState(state)
+    state = Rhino.ApplicationSettings.EdgeAnalysisSettings.GetDefaultState()
+    Rhino.ApplicationSettings.EdgeAnalysisSettings.UpdateFromState(state)
+    def restoresetting(section, name, setting):
         try:
-            s = "Rhino.ApplicationSettings.AppearanceSettings." + name
+            s = "Rhino.ApplicationSettings."+section+"." + name
             if name.endswith("Color"):
                 s += "=System.Drawing.ColorTranslator.FromHtml(\"" + setting + "\")"
             else:
@@ -30,8 +34,10 @@ def cloudrestore(id):
             exec(s)
         except:
             print sys.exc_info()
-    for k, v in data["AppearanceSettings"].items():
-        restoresetting(k,v)
+    for setting, val in data.items():
+        if type(val) is dict:
+            section_name = setting
+            for k,v in val.items(): restoresetting(section_name, k, v)
     rs.Redraw()
 
 	
@@ -51,51 +57,54 @@ def cloudsave(id, password=None):
     f = urllib.urlopen(url)
     data = json.load(f)
     f.close()
-    hashed_password = None
-    if password:
-        hashed_password = hashlib.md5(password).hexdigest()
     if data.has_key("error"):
-        if data["error"]=="not_found":
-            data = {}
-        else:
-            #something unexpected happened
-            return data
-    elif data.has_key("password_hash") and hashed_password:
-        #make sure the password matches
-        if data["password_hash"]!=hashed_password:
-            print "password does not match"
-            return
+        if data["error"]=="not_found": data = {}
+        else: return data #something unexpected happened
 
     data["_id"] = id
-    if hashed_password:
-        data["password_hash"] = hashed_password
-    subdict = {}
-    data["AppearanceSettings"] = subdict
-
-    def addcolor(dict, name):
-        s = "Rhino.ApplicationSettings.AppearanceSettings." + name
-        color = eval(s)
-        dict[name] = System.Drawing.ColorTranslator.ToHtml(color)
-    addcolor(subdict, "CommandPromptBackgroundColor")
-    addcolor(subdict, "CommandPromptHypertextColor")
-    addcolor(subdict, "CommandPromptTextColor")
-    addcolor(subdict, "CrosshairColor")
-    addcolor(subdict, "CurrentLayerBackgroundColor")
-    addcolor(subdict, "DefaultObjectColor")
-    addcolor(subdict, "FeedbackColor")
-    addcolor(subdict, "FrameBackgroundColor")
-    addcolor(subdict, "LockedObjectColor")
-    addcolor(subdict, "PageviewPaperColor")
-    addcolor(subdict, "SelectedObjectColor")
-    addcolor(subdict, "TrackingColor")
-    addcolor(subdict, "ViewportBackgroundColor")
-    addcolor(subdict, "WorldCoordIconXAxisColor")
-    addcolor(subdict, "WorldCoordIconYAxisColor")
-    addcolor(subdict, "WorldCoordIconZAxisColor")
-    subdict["DefaultFontFaceName"] = Rhino.ApplicationSettings.AppearanceSettings.DefaultFontFaceName
-    subdict["ShowCrosshairs"] = Rhino.ApplicationSettings.AppearanceSettings.ShowCrosshairs
-    subdict["ShowFullPathInTitleBar"] = Rhino.ApplicationSettings.AppearanceSettings.ShowFullPathInTitleBar
+    if password: data["password_hash"] = hashlib.md5(password).hexdigest()
     
+    def additem(dict, section, name, defaults):
+        s = "Rhino.ApplicationSettings."+section+"." + name
+        sameasdefault = eval( "defaults."+name+"=="+s )
+        if not sameasdefault:
+            print "  ", s
+            item = eval(s)
+            if type(item) is System.Drawing.Color:
+                item = System.Drawing.ColorTranslator.ToHtml(item)
+            dict[name] = item
+    
+    section = "AppearanceSettings"
+    subdict = {}
+    defaults = Rhino.ApplicationSettings.AppearanceSettings.GetDefaultState()
+    additem(subdict, section, "CommandPromptBackgroundColor", defaults)
+    additem(subdict, section, "CommandPromptHypertextColor", defaults)
+    additem(subdict, section, "CommandPromptTextColor", defaults)
+    additem(subdict, section, "CrosshairColor", defaults)
+    additem(subdict, section, "CurrentLayerBackgroundColor", defaults)
+    additem(subdict, section, "DefaultObjectColor", defaults)
+    additem(subdict, section, "FeedbackColor", defaults)
+    additem(subdict, section, "FrameBackgroundColor", defaults)
+    additem(subdict, section, "LockedObjectColor", defaults)
+    additem(subdict, section, "PageviewPaperColor", defaults)
+    additem(subdict, section, "SelectedObjectColor", defaults)
+    additem(subdict, section, "TrackingColor", defaults)
+    additem(subdict, section, "ViewportBackgroundColor", defaults)
+    additem(subdict, section, "WorldCoordIconXAxisColor", defaults)
+    additem(subdict, section, "WorldCoordIconYAxisColor", defaults)
+    additem(subdict, section, "WorldCoordIconZAxisColor", defaults)
+    additem(subdict, section, "DefaultFontFaceName", defaults)
+    additem(subdict, section, "ShowCrosshairs", defaults)
+    additem(subdict, section, "ShowFullPathInTitleBar", defaults)
+    if len(subdict)>0: data[section] = subdict
+    
+    section = "EdgeAnalysisSettings"
+    subdict = {}
+    defaults = Rhino.ApplicationSettings.EdgeAnalysisSettings.GetDefaultState()
+    additem(subdict, section, "ShowEdgeColor", defaults)
+    additem(subdict, section, "ShowEdges", defaults)
+    if len(subdict)>0: data[section] = subdict
+
     j = json.dumps(data)
     req = urllib2.Request(couchdb_url, j, {"content-type":"application/json"})
     stream = urllib2.urlopen(req)
@@ -130,6 +139,6 @@ if __name__ == "__main__":
         else:
             password = rs.GetString("password")
             if password:
-                print "- Saving settings to cloud"
+                print "- Saving non-default settings to cloud"
                 cloudsave(name, password)
                 print "- Settings have been saved under", name
