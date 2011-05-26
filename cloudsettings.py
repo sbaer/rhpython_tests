@@ -1,5 +1,5 @@
 """Example for working with a couchdb database
-Stores/retrieves appearance setting colors in a couchdb database
+Stores/retrieves application settings in a couchdb database
 hosted in a test account I set up on cloudant.com
 """
 import sys, json, urllib, urllib2, hashlib
@@ -19,13 +19,13 @@ def cloudrestore(id):
     f.close()
     if data.has_key("error"): return data
     
-    state = Rhino.ApplicationSettings.AppearanceSettings.GetDefaultState()
-    Rhino.ApplicationSettings.AppearanceSettings.UpdateFromState(state)
-    state = Rhino.ApplicationSettings.EdgeAnalysisSettings.GetDefaultState()
-    Rhino.ApplicationSettings.EdgeAnalysisSettings.UpdateFromState(state)
-    def restoresetting(section, name, setting):
+    states = {}
+    states["AppearanceSettings"] = Rhino.ApplicationSettings.AppearanceSettings.GetDefaultState()
+    states["EdgeAnalysisSettings"] = Rhino.ApplicationSettings.EdgeAnalysisSettings.GetDefaultState()
+    states["ModelAidSettings"] = Rhino.ApplicationSettings.ModelAidSettings.GetDefaultState()
+    def restoresetting(state, name, setting):
         try:
-            s = "Rhino.ApplicationSettings."+section+"." + name
+            s = "state." + name
             if name.endswith("Color"):
                 s += "=System.Drawing.ColorTranslator.FromHtml(\"" + setting + "\")"
             else:
@@ -35,9 +35,12 @@ def cloudrestore(id):
         except:
             print sys.exc_info()
     for setting, val in data.items():
-        if type(val) is dict:
-            section_name = setting
-            for k,v in val.items(): restoresetting(section_name, k, v)
+        if type(val) is dict and states.has_key(setting):
+            state = states[setting]
+            for k,v in val.items(): restoresetting(state, k, v)
+    Rhino.ApplicationSettings.AppearanceSettings.UpdateFromState( states["AppearanceSettings"] )
+    Rhino.ApplicationSettings.EdgeAnalysisSettings.UpdateFromState( states["EdgeAnalysisSettings"] )
+    Rhino.ApplicationSettings.ModelAidSettings.UpdateFromState( states["ModelAidSettings"] )
     rs.Redraw()
 
 	
@@ -104,7 +107,36 @@ def cloudsave(id, password=None):
     additem(subdict, section, "ShowEdgeColor", defaults)
     additem(subdict, section, "ShowEdges", defaults)
     if len(subdict)>0: data[section] = subdict
-
+    
+    section = "ModelAidSettings"
+    subdict = {}
+    defaults = Rhino.ApplicationSettings.ModelAidSettings.GetDefaultState()
+    additem(subdict, section, "GridSnap", defaults)
+    additem(subdict, section, "Ortho", defaults)
+    additem(subdict, section, "Planar", defaults)
+    additem(subdict, section, "ProjectSnapToCPlane", defaults)
+    additem(subdict, section, "UseHorizontalDialog", defaults)
+    additem(subdict, section, "ExtendTrimLines", defaults)
+    additem(subdict, section, "ExtendToApparentIntersection", defaults)
+    additem(subdict, section, "AltPlusArrow", defaults)
+    additem(subdict, section, "DisplayControlPolygon", defaults)
+    additem(subdict, section, "DisplayControlPolygon", defaults)
+    additem(subdict, section, "HighlightControlPolygon", defaults)
+    additem(subdict, section, "Osnap", defaults)
+    additem(subdict, section, "SnapToLocked", defaults)
+    additem(subdict, section, "UniversalConstructionPlaneMode", defaults)
+    additem(subdict, section, "OrthoAngle", defaults)
+    additem(subdict, section, "NudgeKeyStep", defaults)
+    additem(subdict, section, "CtrlNudgeKeyStep", defaults)
+    additem(subdict, section, "ShiftNudgeKeyStep", defaults)
+    additem(subdict, section, "OsnapPickboxRadius", defaults)
+    additem(subdict, section, "NudgeMode", defaults)
+    additem(subdict, section, "ControlPolygonDisplayDensity", defaults)
+    additem(subdict, section, "OsnapCursorMode", defaults)
+    additem(subdict, section, "OsnapModes", defaults)
+    additem(subdict, section, "MousePickboxRadius", defaults)
+    additem(subdict, section, "PointDisplay", defaults)
+    
     j = json.dumps(data)
     req = urllib2.Request(couchdb_url, j, {"content-type":"application/json"})
     stream = urllib2.urlopen(req)
