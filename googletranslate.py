@@ -1,4 +1,4 @@
-"""Google translate functions for translating text"""
+"""Use Google translate web service"""
 import rhinoscriptsyntax as rs
 import json, urllib
 import scriptcontext
@@ -8,6 +8,7 @@ import scriptcontext
 # You might want to generate your own key, but I don't care
 # if you continue to use this one.
 KEY = "AIzaSyAZGoS-GjZGaSHZMZdoczfdUtWTjm_D-p4"
+
 
 def translate(text, source="en", target="fr"):
     """Translate text from one language to another. Returns the
@@ -37,9 +38,11 @@ def translate(text, source="en", target="fr"):
         return translated
 
 # use __name__ test to determine if this script is directly being
-# executed or if it is being loaded as a librar
+# executed or if it is being loaded as a library
 if( __name__=="__main__" ):
     if rs.ContextIsGrasshopper():
+        # if this script is running in grasshopper, translate the input
+        # variable and set the output variables
         spanish = translate(english, "en", "es")
         german = translate(english, "en", "de")
         french = translate(english, "en", "fr")
