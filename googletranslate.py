@@ -26,9 +26,11 @@ def translate(text, source="en", target="fr"):
     url += "&source="+source
     url += "&target="+target
     f = urllib.urlopen(url)
-    s = f.read()
+    s = f.read().decode('UTF-8')
+    # it seems that the google translate api return html encoded strings
+    htmlcodes = ('&', '&amp;'),('<', '&lt;'),('>', '&gt;'),('"', '&quot;'),("'", '&#39;')
+    for c, code in htmlcodes: s = s.replace(code, c)
     f.close()
-    s = unicode(s, 'utf-8')
     rc = json.loads(s)
     if rc.has_key("data"):
         translated = rc["data"]["translations"][0]["translatedText"]
