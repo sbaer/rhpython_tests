@@ -1,3 +1,6 @@
+"""Sample script that accesses the shapeways API
+http://www.shapeways.com/api
+"""
 import wsdlprovider
 
 wsdl_url = "http://api.shapeways.com/v1/wsdl.php"
@@ -9,6 +12,7 @@ assembly = wsdlprovider.GetWebservice(wsdl_url)
 shapeways = assembly.SWwsdlService()
 session_id = shapeways.login(username, password, application_id)
 if session_id:
+    #get list of printers available
     printers = shapeways.getPrinters(session_id, "", application_id)
     if printers:
         for printer in printers:
