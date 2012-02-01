@@ -16,7 +16,7 @@ Using the Source
 ----------------
 You are going to need either:
 
-* The latest Rhino5 WIP (http://www.rhino3d.com/nr.htm)
+* The latest Rhino5 Beta (http://www.rhino3d.com/nr.htm)
 * The latest Mac Rhino WIP (http://mac.rhino3d.com/)
 
 Start Rhino and run EditPythonScript or RunPythonScript. Load and run one of the scripts found in this directory.
